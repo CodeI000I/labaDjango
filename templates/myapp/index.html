@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="{% static 'myapp/css/account.css' %}" />
+    <title>TSP Graduation Work</title>
+  </head>
+
+  <body>
+    <header class="header">
+      <div class="user-info">
+        <span class="username">{{user.username}}</span>
+      </div>
+      <a href="{% url 'index' %}">О себе</a>
+      <a href="{% url 'media' %}">Медиа</a>
+      <a href="{% url 'contacts' %}">Контакты</a>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="logout-btn">Выйти</button>
+      </form>
+    </header>
+    <div class="container">
+      <div class="column">
+        <h2>О себе</h2>
+        <p>Меня зовут Декстер… Декстер Морган. Не знаю, что со мной случилось, но что бы это ни было, оставило пустоту внутри. Люди много притворяются в общении, но мне кажется, я притворяюсь лучше всех. Это мой крест, я так думаю. Но я не буду винить в этом своих приёмных родителей, Генри и Дорис Морган, они замечательно меня воспитали… но их обоих уже нет. Я их не убивал, честно. </p>
+      </div>
+    </div>
+  </body>
+</html>
