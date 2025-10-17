@@ -19,7 +19,7 @@ function deleteReview(event) {
         return;
     }
 
-    fetch(deleteUrl + reviewId + "/", {
+    fetch(deleteUrl + "/" + reviewId + "/", {
         method: "DELETE",
         headers: {
             "X-CSRFToken": token,
