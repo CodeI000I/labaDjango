@@ -9,45 +9,70 @@
 </head>
 <body>
     <header class="header">
-        <div class="logo">DexterMorgan</div>
-        <nav class="nav">
-            <a href="{% url 'index' %}" class="nav-link">О себе</a>
-            <a href="{% url 'media' %}" class="nav-link">Медиа</a>
-            <a href="{% url 'contacts' %}" class="nav-link">Контакты</a>
-            <a href="{% url 'reviews' %}" class="nav-link active">Отзывы</a>
-        </nav>
-        <div class="user-info">
-            <span class="username">{{ user.username }}</span>
-            <form method="post" action="{% url 'logout' %}" style="display: inline;">
-                {% csrf_token %}
-                <button class="logout-btn">Выйти</button>
-            </form>
-        </div>
+      <div class="user-info">
+        <span class="username">{{user.username}}</span>
+      </div>
+      <a href="{% url 'index' %}">О себе</a>
+      <a href="{% url 'media' %}">Медиа</a>
+      <a href="{% url 'contacts' %}">Контакты</a>
+      <a href="{% url 'reviews' %}">Отзывы</a>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="logout-btn">Выйти</button>
+      </form>
     </header>
 
     <div class="container">
         <div class="column">
             <h2>Написать отзыв</h2>
+
             <div class="form-group">
-                <label for="review-text">Ваш отзыв на английском:</label>
+                <label for="review-text">Отзыв на английском:</label>
                 <textarea 
                     id="review-text" 
                     placeholder="Write your movie review here..."
                     rows="6"
+                    maxlength="1000"
                 ></textarea>
-                <div class="error-message" id="review-error"></div>
+                <div class="error-message" id="review-error">Пусто</div>
             </div>
-            <button class="submit-btn" id="submit-review">Отправить</button>
-        </div>
 
-        <div class="column reviews-column">
-            <h2>Все отзывы</h2>
-            <div class="reviews-list" id="reviews-list">
+            <button class="submit-btn" id="apply-btn">Отправить</button>
+
+            <div class="review-list" id="firstReviewList">
+                <h3 id="firstReviewListTitle">Все отзывы:</h3>
                 {% for review in all_reviews %}
-                <div class="review-item {% if review.sentiment %}positive{% else %}negative{% endif %}" 
-                     data-review-id="{{ review.id }}">
-                    <div class="review-header">
+                <div class="review-item {% if review.sentiment %}positive{% else %}negative{% endif %}" data-review-id="{{ review.id }}">
+                    <div class="review-info">
                         <span class="review-author">{{ review.user.username }}</span>
                         <span class="review-date">{{ review.created_at|date:"d.m.Y H:i" }}</span>
                     </div>
-                    <div class="review-text
+                    <div class="review-content">
+                        <span class="review-text">{{ review.text }}</span>
+                    </div>
+                    <div class="review-actions">
+                        <span class="sentiment-badge {% if review.sentiment %}positive-badge{% else %}negative-badge{% endif %}">
+                            {% if review.sentiment %}Позитивный{% else %}Негативный{% endif %}
+                        </span>
+                        {% if review.user == user or user.is_superuser %}
+                        <button class="del-btn" data-review-id="{{ review.id }}">Удалить</button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="no-reviews">Пока нет отзывов</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = "{{ csrf_token }}";
+        const reviewsUrl = "{% url 'reviews' %}";
+        const deleteUrl = "{% url 'delete_review' 0 %}".replace('0', '');
+        const currentUsername = "{{ user.username }}";
+        const isSuperuser = true;
+    </script>
+    <script src="{% static 'myapp/js/reviews.js' %}" type="module"></script>
+</body>
+</html>
