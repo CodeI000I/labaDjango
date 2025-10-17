@@ -6,9 +6,17 @@ const applyBtn = document.getElementById("apply-btn");
 const reviewError = document.getElementById("review-error");
 const reviewList = document.getElementById("firstReviewList");
 
+console.log("Script loaded");
+console.log("reviewsUrl:", reviewsUrl);
+console.log("deleteUrl:", deleteUrl);
+console.log("token:", token);
+
 // Функция для удаления отзыва
-function deleteReview() {
+function deleteReview(event) {
+    event.preventDefault();
+    
     const reviewId = this.getAttribute("data-review-id");
+    console.log("Deleting review:", reviewId);
     
     if (!confirm("Вы уверены, что хотите удалить этот отзыв?")) {
         return;
@@ -21,14 +29,17 @@ function deleteReview() {
         },
     })
     .then(response => {
+        console.log("Delete response status:", response.status);
         if (!response.ok) {
             throw new Error("Ошибка при удалении отзыва");
         }
         return response.json();
     })
-    .then(() => {
+    .then(data => {
+        console.log("Delete success:", data);
         const reviewItem = document.querySelector(`[data-review-id="${reviewId}"]`);
         if (reviewItem) {
+            reviewItem.style.transition = "opacity 0.3s ease";
             reviewItem.style.opacity = "0";
             setTimeout(() => {
                 reviewItem.remove();
@@ -44,40 +55,56 @@ function deleteReview() {
         }
     })
     .catch(error => {
-        console.error("Ошибка:", error);
-        alert("Не удалось удалить отзыв");
+        console.error("Delete error:", error);
+        alert("Не удалось удалить отзыв: " + error.message);
     });
 }
 
 // Добавляем обработчики удаления для существующих отзывов
 document.querySelectorAll(".del-btn").forEach(button => {
+    console.log("Adding delete listener to button:", button);
     button.addEventListener("click", deleteReview);
 });
 
 // Валидация и отправка формы
-applyBtn.addEventListener("click", validateForm);
+if (applyBtn) {
+    applyBtn.addEventListener("click", validateForm);
+    console.log("Apply button listener added");
+} else {
+    console.error("Apply button not found!");
+}
 
 function activateReviewError(message) {
-    reviewError.classList.add("visible");
-    reviewError.textContent = message;
+    if (reviewError) {
+        reviewError.classList.add("visible");
+        reviewError.textContent = message;
+    }
 }
 
 function deactivateReviewError() {
-    reviewError.classList.remove("visible");
-    reviewError.textContent = "Пусто";
+    if (reviewError) {
+        reviewError.classList.remove("visible");
+        reviewError.textContent = "Пусто";
+    }
 }
 
-function validateForm() {
+function validateForm(event) {
+    event.preventDefault();
+    console.log("Validating form...");
+    
     let isValid = true;
 
-    if (!reviewText.value || reviewText.value.length < 10) {
+    if (!reviewText || !reviewText.value || reviewText.value.trim().length < 10) {
         activateReviewError("Пожалуйста, введите отзыв (минимум 10 символов)");
         isValid = false;
+        console.log("Validation failed: too short");
     } else if (reviewText.value.length > 1000) {
         activateReviewError("Отзыв слишком длинный (максимум 1000 символов)");
         isValid = false;
+        console.log("Validation failed: too long");
     } else {
         deactivateReviewError();
+        console.log("Validation passed");
     }
 
     if (isValid) {
@@ -86,38 +113,53 @@ function validateForm() {
 }
 
 function responseCheck(response) {
+    console.log("Response status:", response.status);
+    console.log("Response ok:", response.ok);
+    
     if (!response.ok) {
-        console.log(response.statusText);
-        activateReviewError("Ошибка при отправке отзыва");
-        throw new Error(response.statusText);
+        return response.json().then(data => {
+            console.log("Error response data:", data);
+            activateReviewError(data.errors || "Ошибка при отправке отзыва");
+            throw new Error(data.errors || response.statusText);
+        });
     }
     return response.json();
 }
 
 function sendForm() {
+    console.log("Sending form...");
+    console.log("Review text:", reviewText.value);
+    
+    const requestData = {
+        review_text: reviewText.value.trim(),
+    };
+    
+    console.log("Request data:", requestData);
+    
     fetch(reviewsUrl, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             "X-CSRFToken": token,
         },
-        body: JSON.stringify({
-            review_text: reviewText.value,
-        }),
+        body: JSON.stringify(requestData),
     })
     .then(responseCheck)
     .then(data => {
+        console.log("Success response:", data);
         addReviewToList(data);
         reviewText.value = "";
         deactivateReviewError();
         showSuccess();
     })
     .catch(error => {
-        console.error("Ошибка:", error);
+        console.error("Send error:", error);
     });
 }
 
 function addReviewToList(review) {
+    console.log("Adding review to list:", review);
+    
     const noReviews = reviewList.querySelector(".no-reviews");
     if (noReviews) {
         noReviews.remove();
@@ -154,8 +196,8 @@ function addReviewToList(review) {
 
     // Вставляем после заголовка h3
     const title = reviewList.querySelector("h3");
-    if (title && title.nextSibling) {
-        reviewList.insertBefore(reviewItem, title.nextSibling);
+    if (title) {
+        title.insertAdjacentElement('afterend', reviewItem);
     } else {
         reviewList.appendChild(reviewItem);
     }
@@ -163,18 +205,23 @@ function addReviewToList(review) {
     // Добавляем обработчик удаления
     if (canDelete) {
         const delBtn = reviewItem.querySelector(".del-btn");
-        delBtn.addEventListener("click", deleteReview);
+        if (delBtn) {
+            delBtn.addEventListener("click", deleteReview);
+            console.log("Delete listener added to new review");
+        }
     }
 }
 
 function showSuccess() {
     const originalText = applyBtn.textContent;
+    const originalColor = applyBtn.style.backgroundColor;
+    
     applyBtn.textContent = "Отправлено!";
     applyBtn.style.backgroundColor = "#4caf50";
 
     setTimeout(() => {
         applyBtn.textContent = originalText;
-        applyBtn.style.backgroundColor = "";
+        applyBtn.style.backgroundColor = originalColor;
     }, 2000);
 }
 
@@ -196,8 +243,12 @@ function escapeHtml(text) {
 }
 
 // Enter для отправки (Ctrl+Enter)
-reviewText.addEventListener("keydown", function (e) {
-    if (e.ctrlKey && e.key === "Enter") {
-        validateForm();
-    }
-});
+if (reviewText) {
+    reviewText.addEventListener("keydown", function (e) {
+        if (e.ctrlKey && e.key === "Enter") {
+            validateForm(e);
+        }
+    });
+}
+
+console.log("Script initialization complete");
