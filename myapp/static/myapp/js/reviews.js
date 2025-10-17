@@ -7,9 +7,10 @@ const reviewError = document.getElementById("review-error");
 const reviewList = document.getElementById("firstReviewList");
 
 console.log("Script loaded");
+console.log("reviewText:", reviewText);
+console.log("applyBtn:", applyBtn);
 console.log("reviewsUrl:", reviewsUrl);
 console.log("deleteUrl:", deleteUrl);
-console.log("token:", token);
 
 // Функция для удаления отзыва
 function deleteReview(event) {
@@ -62,7 +63,7 @@ function deleteReview(event) {
 
 // Добавляем обработчики удаления для существующих отзывов
 document.querySelectorAll(".del-btn").forEach(button => {
-    console.log("Adding delete listener to button:", button);
+    console.log("Adding delete listener to button");
     button.addEventListener("click", deleteReview);
 });
 
@@ -89,7 +90,7 @@ function deactivateReviewError() {
 }
 
 function validateForm(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
     console.log("Validating form...");
     
     let isValid = true;
@@ -121,6 +122,9 @@ function responseCheck(response) {
             console.log("Error response data:", data);
             activateReviewError(data.errors || "Ошибка при отправке отзыва");
             throw new Error(data.errors || response.statusText);
+        }).catch(err => {
+            activateReviewError("Ошибка при отправке отзыва");
+            throw err;
         });
     }
     return response.json();
@@ -135,6 +139,12 @@ function sendForm() {
     };
     
     console.log("Request data:", requestData);
+    
+    // Блокируем кнопку
+    if (applyBtn) {
+        applyBtn.disabled = true;
+        applyBtn.textContent = "Отправка...";
+    }
     
     fetch(reviewsUrl, {
         method: "POST",
@@ -154,6 +164,13 @@ function sendForm() {
     })
     .catch(error => {
         console.error("Send error:", error);
+    })
+    .finally(() => {
+        // Разблокируем кнопку
+        if (applyBtn) {
+            applyBtn.disabled = false;
+            applyBtn.textContent = "Отправить";
+        }
     });
 }
 
@@ -172,6 +189,7 @@ function addReviewToList(review) {
     const reviewItem = document.createElement("div");
     reviewItem.className = `review-item ${sentimentClass}`;
     reviewItem.dataset.reviewId = review.id;
+    reviewItem.style.opacity = "0";
 
     const canDelete = review.username === currentUsername || isSuperuser;
     const deleteButton = canDelete
@@ -201,6 +219,12 @@ function addReviewToList(review) {
     } else {
         reviewList.appendChild(reviewItem);
     }
+    
+    // Анимация появления
+    setTimeout(() => {
+        reviewItem.style.transition = "opacity 0.3s ease";
+        reviewItem.style.opacity = "1";
+    }, 10);
 
     // Добавляем обработчик удаления
     if (canDelete) {
@@ -213,15 +237,16 @@ function addReviewToList(review) {
 }
 
 function showSuccess() {
+    if (!applyBtn) return;
+    
     const originalText = applyBtn.textContent;
-    const originalColor = applyBtn.style.backgroundColor;
     
     applyBtn.textContent = "Отправлено!";
     applyBtn.style.backgroundColor = "#4caf50";
 
     setTimeout(() => {
         applyBtn.textContent = originalText;
-        applyBtn.style.backgroundColor = originalColor;
+        applyBtn.style.backgroundColor = "#2196f3";
     }, 2000);
 }
 
@@ -249,6 +274,7 @@ if (reviewText) {
             validateForm(e);
         }
     });
+    console.log("Keydown listener added");
 }
 
 console.log("Script initialization complete");
