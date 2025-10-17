@@ -4,58 +4,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'myapp/css/reviews.css' %}">
+    <link rel="stylesheet" href="{% static 'myapp/css/account.css' %}">
     <title>Отзывы на фильмы - DexterMorgan</title>
 </head>
-<body>
+  <body>
     <header class="header">
-        <div class="header-content">
-            <div class="logo">DexterMorgan</div>
-            <nav class="nav">
-                <a href="{% url 'index' %}" class="nav-link">О себе</a>
-                <a href="{% url 'media' %}" class="nav-link">Медиа</a>
-                <a href="{% url 'contacts' %}" class="nav-link">Контакты</a>
-                <a href="{% url 'reviews' %}" class="nav-link active">Отзывы</a>
-            </nav>
-            <div class="user-info">
-                <span class="username">{{ user.username }}</span>
-                <form method="post" action="{% url 'logout' %}" style="display: inline;">
-                    {% csrf_token %}
-                    <button class="logout-btn">Выйти</button>
-                </form>
-            </div>
-        </div>
+      <div class="user-info">
+        <span class="username">{{user.username}}</span>
+      </div>
+      <a href="{% url 'index' %}">О себе</a>
+      <a href="{% url 'media' %}">Медиа</a>
+      <a href="{% url 'contacts' %}">Контакты</a>
+      <a href="{% url 'reviews' %}">Отзывы</a>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="logout-btn">Выйти</button>
+      </form>
     </header>
 
     <div class="container">
-        <div class="page-title">
-            <h1>🎬 Отзывы на фильмы</h1>
-            <p class="subtitle">Делитесь своим мнением о фильмах, система автоматически определит тональность отзыва</p>
-        </div>
 
         <div class="review-form-section">
-            <h2>✍️ Написать новый отзыв</h2>
-            <p class="form-hint">Напишите отзыв на английском языке, и наша ML-модель определит его тональность</p>
+            <h2>Написать новый отзыв</h2>
             <div class="form-group">
-                <label for="review-text">Ваш отзыв:</label>
                 <textarea 
                     id="review-text" 
-                    placeholder="Write your movie review here in English... (minimum 10 characters)"
                     rows="6"
                 ></textarea>
-                <div class="char-counter">
-                    <span id="char-count">0</span> символов
-                </div>
                 <div class="error-message" id="review-error"></div>
             </div>
             <button class="submit-btn" id="submit-review">
-                <span class="btn-icon">📤</span> Отправить отзыв
+                <span class="btn-icon"></span> Отправить отзыв
             </button>
         </div>
 
         <div class="reviews-section">
             <div class="section-header">
-                <h2>📝 Все отзывы</h2>
+                <h2>Все отзывы</h2>
                 <div class="legend">
                     <span class="legend-item">
                         <span class="legend-color positive"></span> Позитивный
@@ -72,21 +57,21 @@
                      data-review-id="{{ review.id }}">
                     <div class="review-header">
                         <div class="review-author-block">
-                            <span class="review-author">👤 {{ review.user.username }}</span>
-                            <span class="review-date">📅 {{ review.created_at|date:"d.m.Y H:i" }}</span>
+                            <span class="review-author"> {{ review.user.username }}</span>
+                            <span class="review-date"> {{ review.created_at|date:"d.m.Y H:i" }}</span>
                         </div>
                         <span class="review-sentiment">
                             {% if review.sentiment %}
-                                <span class="sentiment-badge positive-badge">😊 Позитивный</span>
+                                <span class="sentiment-badge positive-badge"> Позитивный</span>
                             {% else %}
-                                <span class="sentiment-badge negative-badge">😞 Негативный</span>
+                                <span class="sentiment-badge negative-badge"> Негативный</span>
                             {% endif %}
                         </span>
                     </div>
                     <div class="review-text">{{ review.text }}</div>
                     {% if review.user == user or user.is_superuser %}
                     <button class="delete-btn" data-review-id="{{ review.id }}">
-                        🗑️ Удалить
+                         Удалить
                     </button>
                     {% endif %}
                 </div>
@@ -99,10 +84,6 @@
             </div>
         </div>
     </div>
-
-    <footer class="footer">
-        <p>&copy; 2025 DexterMorgan. Классификация отзывов с помощью ML</p>
-    </footer>
 
     <script>
         const csrfToken = "{{ csrf_token }}";
