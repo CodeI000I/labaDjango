@@ -1,24 +1,15 @@
 // myapp/static/myapp/js/reviews.js
 
-// Элементы DOM
 const reviewTextarea = document.getElementById('review-text');
 const submitBtn = document.getElementById('submit-review');
 const errorElement = document.getElementById('review-error');
-const charCount = document.getElementById('char-count');
 const reviewsList = document.getElementById('reviews-list');
 
-// Счетчик символов
-reviewTextarea.addEventListener('input', function() {
-    charCount.textContent = this.value.length;
-});
-
-// Отправка отзыва
 submitBtn.addEventListener('click', submitReview);
 
 function submitReview() {
     const reviewText = reviewTextarea.value.trim();
     
-    // Валидация
     if (!reviewText) {
         showError('Пожалуйста, введите текст отзыва');
         return;
@@ -31,11 +22,9 @@ function submitReview() {
     
     hideError();
     
-    // Блокируем кнопку
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="btn-icon">⏳</span> Отправка...';
+    submitBtn.textContent = 'Отправка...';
     
-    // Отправка на сервер
     fetch(reviewsUrl, {
         method: 'POST',
         headers: {
@@ -57,16 +46,14 @@ function submitReview() {
     .then(data => {
         addReviewToList(data);
         reviewTextarea.value = '';
-        charCount.textContent = '0';
         showSuccess();
     })
     .catch(error => {
         showError(error.message);
     })
     .finally(() => {
-        // Разблокируем кнопку
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span class="btn-icon">📤</span> Отправить отзыв';
+        submitBtn.textContent = 'Отправить';
     });
 }
 
@@ -78,52 +65,47 @@ function addReviewToList(review) {
     }
     
     const sentimentClass = review.sentiment ? 'positive' : 'negative';
-    const sentimentText = review.sentiment ? '😊 Позитивный' : '😞 Негативный';
-    const sentimentBadgeClass = review.sentiment ? 'positive-badge' : 'negative-badge';
+    const sentimentText = review.sentiment ? 'Позитивный' : 'Негативный';
+    const sentimentLabelClass = review.sentiment ? 'positive-sentiment' : 'negative-sentiment';
     
-    const reviewCard = document.createElement('div');
-    reviewCard.className = `review-card ${sentimentClass}`;
-    reviewCard.dataset.reviewId = review.id;
-    reviewCard.style.opacity = '0';
-    reviewCard.style.transform = 'translateY(-20px)';
+    const reviewItem = document.createElement('div');
+    reviewItem.className = `review-item ${sentimentClass}`;
+    reviewItem.dataset.reviewId = review.id;
+    reviewItem.style.opacity = '0';
     
-    const canDelete = review.username === currentUsername;
+    const canDelete = review.username === currentUsername || isSuperuser;
     const deleteButton = canDelete ? 
-        `<button class="delete-btn" data-review-id="${review.id}">🗑️ Удалить</button>` : '';
+        `<button class="delete-btn" data-review-id="${review.id}">Удалить</button>` : '';
     
-    reviewCard.innerHTML = `
+    reviewItem.innerHTML = `
         <div class="review-header">
-            <div class="review-author-block">
-                <span class="review-author">👤 ${escapeHtml(review.username)}</span>
-                <span class="review-date">📅 ${formatDate(review.created_at)}</span>
-            </div>
-            <span class="review-sentiment">
-                <span class="sentiment-badge ${sentimentBadgeClass}">${sentimentText}</span>
-            </span>
+            <span class="review-author">${escapeHtml(review.username)}</span>
+            <span class="review-date">${formatDate(review.created_at)}</span>
         </div>
         <div class="review-text">${escapeHtml(review.text)}</div>
-        ${deleteButton}
+        <div class="review-footer">
+            <span class="sentiment-label">
+                <span class="sentiment ${sentimentLabelClass}">${sentimentText}</span>
+            </span>
+            ${deleteButton}
+        </div>
     `;
     
-    reviewsList.insertBefore(reviewCard, reviewsList.firstChild);
+    reviewsList.insertBefore(reviewItem, reviewsList.firstChild);
     
-    // Анимация появления
     setTimeout(() => {
-        reviewCard.style.transition = 'all 0.3s ease';
-        reviewCard.style.opacity = '1';
-        reviewCard.style.transform = 'translateY(0)';
+        reviewItem.style.transition = 'all 0.3s ease';
+        reviewItem.style.opacity = '1';
     }, 10);
     
-    // Добавляем обработчик удаления
     if (canDelete) {
-        const deleteBtn = reviewCard.querySelector('.delete-btn');
+        const deleteBtn = reviewItem.querySelector('.delete-btn');
         deleteBtn.addEventListener('click', function() {
             deleteReview(review.id);
         });
     }
 }
 
-// Обработчики удаления для существующих отзывов
 document.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         const reviewId = this.dataset.reviewId;
@@ -151,22 +133,15 @@ function deleteReview(reviewId) {
         return response.json();
     })
     .then(() => {
-        const reviewCard = document.querySelector(`[data-review-id="${reviewId}"]`);
-        if (reviewCard) {
-            reviewCard.style.opacity = '0';
-            reviewCard.style.transform = 'scale(0.8)';
+        const reviewItem = document.querySelector(`[data-review-id="${reviewId}"]`);
+        if (reviewItem) {
+            reviewItem.style.opacity = '0';
             setTimeout(() => {
-                reviewCard.remove();
+                reviewItem.remove();
                 
-                // Проверяем, остались ли отзывы
-                const remainingReviews = reviewsList.querySelectorAll('.review-card');
+                const remainingReviews = reviewsList.querySelectorAll('.review-item');
                 if (remainingReviews.length === 0) {
-                    reviewsList.innerHTML = `
-                        <div class="no-reviews">
-                            <div class="no-reviews-icon">🎬</div>
-                            <p>Пока нет отзывов. Будьте первым!</p>
-                        </div>
-                    `;
+                    reviewsList.innerHTML = '<p class="no-reviews">Пока нет отзывов</p>';
                 }
             }, 300);
         }
@@ -179,22 +154,22 @@ function deleteReview(reviewId) {
 function showError(message) {
     errorElement.textContent = message;
     errorElement.classList.add('visible');
-    reviewTextarea.style.borderColor = '#e74c3c';
+    reviewTextarea.style.borderColor = '#e32636';
 }
 
 function hideError() {
     errorElement.classList.remove('visible');
-    reviewTextarea.style.borderColor = '#e0e0e0';
+    reviewTextarea.style.borderColor = '#ddd';
 }
 
 function showSuccess() {
-    const originalHTML = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<span class="btn-icon">✅</span> Отзыв добавлен!';
-    submitBtn.style.background = 'linear-gradient(135deg, #27ae60 0%, #229954 100%)';
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Отправлено!';
+    submitBtn.style.backgroundColor = '#4caf50';
     
     setTimeout(() => {
-        submitBtn.innerHTML = originalHTML;
-        submitBtn.style.background = '';
+        submitBtn.textContent = originalText;
+        submitBtn.style.backgroundColor = '';
     }, 2000);
 }
 
@@ -215,7 +190,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Enter для отправки (Ctrl+Enter)
 reviewTextarea.addEventListener('keydown', function(e) {
     if (e.ctrlKey && e.key === 'Enter') {
         submitReview();
